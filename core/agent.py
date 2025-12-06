@@ -23,9 +23,12 @@ class Agent:
         temperature: Optional[float] = None,  
         api_key: Optional[str] = None,
         persistent: bool = False,
+        name: str = None,
         **llm_kwargs
     ):
         self.model = model
+        self.name = name or f"Agent-{id(self):x}"
+
         if max_tokens is not None:
             llm_kwargs["max_tokens"] = max_tokens
         if temperature is not None:
@@ -39,7 +42,7 @@ class Agent:
         for t in (tools or []):
             self.tool_registry.add(t)
 
-        self.memory = memory or MemorySystem(self.llm, persistent=persistent)
+        self.memory = memory or MemorySystem(self.llm, persistent=persistent, name=self.name)
 
         planner_temp = temperature if temperature is not None else None
         self.planner = AdvancedPlanner(
