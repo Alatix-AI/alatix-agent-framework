@@ -282,8 +282,6 @@ class SemanticMemoryAdvanced:
     ):
         self.llm = llm_adapter
         if persistent:
-            if index_path is None:
-                index_path = f".agentforge/semantic_{int(time.time())}.index"
             self.index = FAISSVectorStore(dim=dim, index_path=index_path)
         else:
             self.index = SimpleVectorStore(dim=dim)
@@ -446,9 +444,19 @@ class MemorySystem:
         embed_dim: int = 768,
         sem_max_items: int = 5000,
         persistent: bool = False,
-        index_path: Optional[str] = None
+        index_path: Optional[str] = None,
+        name: str = None,
     ):
-        
+        if persistent:
+            if name and name.strip():
+                # Geçersiz karakterleri temizle
+                safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in name.strip())
+                index_path = f".agentforge/semantic_{safe_name}.index"
+            else:
+                index_path = f".agentforge/semantic_{id(llm_adapter)}.index"
+        else:
+            index_path = None
+       
         # advanced episodic memory (auto summarization)
         self.episodic = EpisodicMemoryAdvanced(llm_adapter, max_items=episodic_limit, chunk_size=20, summary_retention=20)
         # advanced semantic memory (importance/forgetting)
@@ -518,4 +526,5 @@ class MemorySystem:
             "episodic_summaries": self.episodic.get_recent_summaries(n=10),
             "semantic_count": len(self.semantic.index),
         }
+
 
