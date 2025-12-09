@@ -488,11 +488,15 @@ Return ONLY the JSON object (no extra text). If candidate is fine, return it unc
         hist = "\n".join([f"- action: {h['action']} | result: {str(h['result'])[:300]}" for h in history])
         semantic_block = self._format_semantic(context.get("semantic", []))
         episodic_block = self._format_episodic(context.get("episodic", []))
+        peer_block = context.get("peer_messages", "(no peer messages)")
         base = f"""
 You are an advanced multi-step planner for an autonomous agent.
 
 TASK:
 {task}
+
+PEER CONTEXT:
+{peer_block}
 
 RELEVANT SEMANTIC MEMORY (top matches):
 {semantic_block}
@@ -678,3 +682,4 @@ def json_dumps_safe(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False)
     except Exception:
         return str(obj)
+
