@@ -73,6 +73,38 @@ class Agent:
                     final_text = ev["text"]
         return final_text
 
+
+    # -------------------------
+    # Inbox management
+    # -------------------------
+    def receive_message(self, sender: str, content: Any, priority: str = "info"):
+        """
+        Başka bir ajanın gönderdiği mesajı al.
+        """
+        self.inbox.append({
+            "from": sender,
+            "content": content,
+            "priority": priority,
+            "timestamp": time.time()
+        })
+    
+    # -------------------------
+    # Inbox summary for planning
+    # -------------------------
+    def get_inbox_summary(self, max_items: int = 5) -> str:
+        """
+        Inbox içeriğini planlama için özetle (sadece kritik mesajlar).
+        """
+        if not self.inbox:
+            return "(no messages)"
+        # Öncelikli mesajları öne al
+        sorted_msgs = sorted(self.inbox, key=lambda x: {"critical": 0, "error": 1, "info": 2}.get(x["priority"], 2))
+        lines = []
+        for msg in sorted_msgs[:max_items]:
+            lines.append(f"[{msg['from']}] ({msg['priority']}): {msg['content']}")
+        return "\n".join(lines)
+
+    
     # -------------------------
     # Streaming main loop
     # -------------------------
@@ -90,6 +122,25 @@ class Agent:
             context = await self.memory.retrieve_context(
                 task, k_semantic=self.semantic_k, k_episodic=self.episodic_k
             )
+
+            # <<< YENİ KOD BAŞI >>>
+            # Inbox mesajlarını bağlam olarak ekle ve semantic memory'e kaydet
+            inbox_summary = ""
+            if hasattr(self, 'inbox') and self.inbox:
+                inbox_summary = self.get_inbox_summary()
+                if inbox_summary != "(no messages)":
+                    # Peer bağlamını semantic memory'e kalıcı olarak kaydet
+                    await self.memory.add_knowledge(
+                        text=f"Important peer context received for task: {task}\n{inbox_summary}",
+                        metadata={
+                            "source": "peer_message",
+                            "task": task,
+                            "peers": list(set(msg["from"] for msg in self.inbox))
+                        }
+                    )
+                    # Bağlamı planlama için de aktar
+                    context["peer_messages"] = inbox_summary
+            # <<< YENİ KOD SONU >>>
 
             # --- ask planner for next step ---
             plan = await self.planner.plan(
