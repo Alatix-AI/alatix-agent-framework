@@ -181,7 +181,7 @@ class FAISSVectorStore:
 # - provides recent events + recent summaries for context
 # ------------------------------------------------------------
 class EpisodicMemoryAdvanced:
-    def __init__(self, llm_adapter, max_items: int = 200, chunk_size: int = 20, summary_retention: int = 10):
+    def __init__(self, llm_adapter, max_items: int = 200, chunk_size: int = 20, summary_retention: int = 10, persistent: bool = False, episodic_path: Optional[str] = None):
         self.max_items = max_items
         self.memory: List[Dict[str, Any]] = []
         self._lock = asyncio.Lock()
@@ -191,6 +191,14 @@ class EpisodicMemoryAdvanced:
         # list of dicts: {"summary": str, "from_idx": int, "to_idx": int, "ts": float}
         self.summaries: List[Dict[str, Any]] = []
 
+        # yükleme
+        if persistent:
+            self.episodic_path = episodic_path
+            self._load_from_disk()
+        else:
+            self.episodic_path = None
+
+    
     async def add(self, item: Dict[str, Any]):
         """
         Add an episodic event: item should be a dict like {"action":..., "result":...}
@@ -213,6 +221,10 @@ class EpisodicMemoryAdvanced:
             if len(self.memory) % self.chunk_size == 0:
                 # create a task but don't await here — summarization runs in background
                 asyncio.create_task(self._summarize_last_chunk())
+                
+            # optionally save to disk
+            if self.episodic_path:
+                asyncio.create_task(self._save_to_disk())
 
     def get_all(self) -> List[Dict[str, Any]]:
         return list(self.memory)
@@ -262,6 +274,15 @@ class EpisodicMemoryAdvanced:
     def get_recent_summaries(self, n: int = 3) -> List[Dict[str, Any]]:
         return list(self.summaries[-n:])
 
+    async def _save_to_disk(self):
+        if self.episodic_path:
+            with open(self.episodic_path, "wb") as f:
+                pickle.dump(self.memory, f)
+
+    def _load_from_disk(self):
+        if self.episodic_path and self.episodic_path.exists():
+            with open(self.episodic_path, "rb") as f:
+                self.memory = pickle.load(f)
 
 # ------------------------------------------------------------
 # SEMANTIC MEMORY (advanced)
@@ -452,13 +473,16 @@ class MemorySystem:
                 # Geçersiz karakterleri temizle
                 safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in name.strip())
                 index_path = f".agentforge/semantic_{safe_name}.index"
+                episodic_path = Path(f".agentforge/episodic_{safe_name}.pkl")
             else:
                 index_path = f".agentforge/semantic_{id(llm_adapter)}.index"
+                episodic_path = Path(f".agentforge/episodic_{id(llm_adapter)}.pkl")
         else:
             index_path = None
+            episodic_path = None
        
         # advanced episodic memory (auto summarization)
-        self.episodic = EpisodicMemoryAdvanced(llm_adapter, max_items=episodic_limit, chunk_size=20, summary_retention=20)
+        self.episodic = EpisodicMemoryAdvanced(llm_adapter, max_items=episodic_limit, chunk_size=20, summary_retention=20, persistent=persistent, episodic_path=episodic_path)
         # advanced semantic memory (importance/forgetting)
         self.semantic = SemanticMemoryAdvanced(llm_adapter, dim=embed_dim, max_items=sem_max_items, persistent=persistent, index_path=index_path)
         self.llm = llm_adapter
@@ -526,5 +550,6 @@ class MemorySystem:
             "episodic_summaries": self.episodic.get_recent_summaries(n=10),
             "semantic_count": len(self.semantic.index),
         }
+
 
 
