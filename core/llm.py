@@ -10,6 +10,13 @@ from dataclasses import dataclass
 
 # optional imports
 try:
+    from google import genai
+    from google.genai import types
+except Exception:
+    genai = None
+    types = None
+    
+try:
     import openai
 except Exception:
     openai = None
@@ -116,6 +123,8 @@ class LLMClient:
             return HuggingFaceAdapter(model, **kwargs)
         if prefix in ("ollama", "local"):
             return OllamaAdapter(model, **kwargs)
+        if prefix == "gemini":
+            return GeminiAdapter(model, **kwargs)      
         if prefix in ("mock", "test"):
             return MockAdapter(model)
 
@@ -803,6 +812,225 @@ class OllamaAdapter(BaseLLM):
                     raise RuntimeError(f"Ollama embedding failed. Is '{EMBEDDING_MODEL}' pulled? Run: `ollama pull nomic-embed-text`")
             return embeddings
 
+# --------------------------------------------------------
+# Gemini Adapter
+# --------------------------------------------------------
+class GeminiAdapter(BaseLLM):
+    provider = "gemini"
+
+    def __init__(
+        self,
+        model: str = "gemini:gemini-1.5-flash",
+        temperature: float = 0.0,
+        api_key: Optional[str] = None,
+        **kwargs
+    ):
+        self.genai = genai
+        self.types = types
+
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "Gemini API key is required. "
+                "Pass api_key or set GEMINI_API_KEY."
+            )
+
+        # ⚠️ GLOBAL STATE YOK
+        self.client = genai.Client(api_key=self.api_key)
+
+        # "gemini:xxx" → "xxx"
+        self.model_name = model.split(":", 1)[1] if ":" in model else model
+        self.temperature = temperature
+
+    # ---------------------------------------------------------
+    # TEXT GENERATION
+    # ---------------------------------------------------------
+    async def generate(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> LLMResponse:
+        config = self.types.GenerateContentConfig(
+            temperature=self.temperature,
+            max_output_tokens=max_tokens,
+        )
+
+        loop = asyncio.get_running_loop()
+
+        try:
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config,
+                )
+            )
+
+            return LLMResponse(
+                text=response.text or "",
+                raw=response
+            )
+
+        except Exception as e:
+            raise RuntimeError(f"Gemini generate error: {e}")
+
+    # ---------------------------------------------------------
+    # STREAMING
+    # ---------------------------------------------------------
+    async def stream(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ):
+        config = self.types.GenerateContentConfig(
+            temperature=self.temperature,
+            max_output_tokens=max_tokens,
+        )
+
+        loop = asyncio.get_running_loop()
+
+        try:
+            stream = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.stream_generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config,
+                )
+            )
+
+            for chunk in stream:
+                if chunk.text:
+                    yield chunk.text
+
+        except Exception as e:
+            raise RuntimeError(f"Gemini stream error: {e}")
+
+    # ---------------------------------------------------------
+    # EMBEDDINGS (SEMANTIC MEMORY / RAG)
+    # ---------------------------------------------------------
+    async def embed(
+        self,
+        texts: List[str],
+        **kwargs
+    ) -> List[List[float]]:
+        if not isinstance(texts, list):
+            texts = [texts]
+
+        loop = asyncio.get_running_loop()
+
+        try:
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.embed_content(
+                    model="models/embedding-001",
+                    content=texts,
+                )
+            )
+
+            return [emb.values for emb in response.embeddings]
+
+        except Exception as e:
+            raise RuntimeError(f"Gemini embedding error: {e}")
+
+    # ---------------------------------------------------------
+    # TOOL / FUNCTION SIGNAL (RAW)
+    # ---------------------------------------------------------
+    async def generate_with_functions(
+        self,
+        prompt: str,
+        functions: List[Dict[str, Any]],
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Returns OpenAI-compatible structured response for tool calling.
+        """
+        declarations = []
+        for f in functions:
+            props = f.get("parameters", {}).get("properties", {})
+            required = f.get("parameters", {}).get("required", [])
+            parameters = {}
+            for name, info in props.items():
+                parameters[name] = types.Schema(
+                    type=types.Type.STRING,
+                    description=info.get("description", "")
+                )
+            declarations.append(
+                types.FunctionDeclaration(
+                    name=f["name"],
+                    description=f.get("description", ""),
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties=parameters,
+                        required=required
+                    )
+                )
+            )
+
+        config = types.GenerateContentConfig(
+            temperature=self.temperature,
+            max_output_tokens=max_tokens,
+            tools=[types.Tool(function_declarations=declarations)],
+        )
+
+        loop = asyncio.get_running_loop()
+        try:
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config,
+                )
+            )
+
+            # --- OpenAI formatına dönüştürme ---
+            candidates = []
+            for candidate in response.candidates:
+                content = candidate.content
+                role = "assistant"
+                function_call = None
+
+                # Tool çağrısı var mı?
+                if content and hasattr(content, 'parts'):
+                    for part in content.parts:
+                        if hasattr(part, 'function_call') and part.function_call:
+                            func = part.function_call
+                            function_call = {
+                                "name": func.name,
+                                "arguments": json.dumps({k: str(v) for k, v in func.args.items()})
+                            }
+                            # function_call varsa, content None olmalı (OpenAI gibi)
+                            content_text = None
+                            break
+                    else:
+                        content_text = content.text if content.text else ""
+                else:
+                    content_text = ""
+
+                msg = {
+                    "role": role,
+                    "content": content_text,
+                    "function_call": function_call
+                }
+                finish_reason = "function_call" if function_call else "stop"
+                candidates.append({
+                    "message": msg,
+                    "finish_reason": finish_reason
+                })
+
+            return {
+                "choices": candidates,
+                "raw_gemini_response": response  # debug için
+            }
+        
+        except Exception as e:
+            raise RuntimeError(f"Gemini tool calling error: {e}")
+
 
 # --------------------------------------------------------
 # Mock Adapter (for tests)
@@ -1021,3 +1249,4 @@ def count_tokens(model: str, text: str) -> Optional[int]:
     except Exception:
         enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(text))
+
