@@ -1,4 +1,4 @@
-# agentforge/core/memory.py
+# alatix/core/memory.py
 from __future__ import annotations
 from typing import List, Any, Dict, Tuple, Optional
 import numpy as np
@@ -550,6 +550,7 @@ class MemorySystem:
             "episodic_summaries": self.episodic.get_recent_summaries(n=10),
             "semantic_count": len(self.semantic.index),
         }
+
 
 
 
