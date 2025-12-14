@@ -46,7 +46,7 @@ full = [
     "anthropic>=0.25.0",
     "replicate>=0.20.0",
     "ollama",
-    "faiss-cpu"
+    "faiss-cpu",
     "openai",
     "google-genai",
 ]
@@ -72,6 +72,7 @@ strict = true
 minversion = "7.0"
 addopts = "-ra -q"
 testpaths = ["tests"]
+
 
 
 
