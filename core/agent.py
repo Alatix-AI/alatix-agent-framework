@@ -1,4 +1,4 @@
-# atlatix/core/agent.py
+# alatix/core/agent.py
 from __future__ import annotations
 import json
 from typing import List, Dict, Any, Optional
