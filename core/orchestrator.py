@@ -1,4 +1,4 @@
-# agentforge/core/orchestrator.py
+# alatix/core/orchestrator.py
 import asyncio
 import json
 import time
@@ -205,3 +205,4 @@ class SubAgentOrchestrator:
                 return f"[{agent_name}] Used '{tool_name}' → got result"
             else:
                 return f"[{agent_name}] '{tool_name}' failed"
+
