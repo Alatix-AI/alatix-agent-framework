@@ -1,4 +1,4 @@
-# agentforge/core/planner.py
+# alatix/core/planner.py
 import json
 import math
 import asyncio
@@ -682,4 +682,5 @@ def json_dumps_safe(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False)
     except Exception:
         return str(obj)
+
 
