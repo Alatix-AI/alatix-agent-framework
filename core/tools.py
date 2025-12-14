@@ -1,4 +1,4 @@
-# agentforge/core/tools.py
+# alatix/core/tools.py
 from typing import Callable, Any, Dict, Optional
 import inspect
 import json
@@ -183,3 +183,4 @@ def tool(func=None, *, name=None, description=None):
 
 
  
+
