@@ -28,7 +28,6 @@ classifiers = [
 
 dependencies = [
     "tenacity",
-    "openai", 
     "tiktoken",
     "httpx",
     "requests", 
@@ -38,13 +37,18 @@ dependencies = [
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.25.0"]
 replicate = ["replicate>=0.20.0"]
+gemini = ["google-genai"]
 ollama = ["ollama"]
+openai = ["openai"]
+
 faiss = ["faiss-cpu"]
 full = [
     "anthropic>=0.25.0",
     "replicate>=0.20.0",
     "ollama",
     "faiss-cpu"
+    "openai",
+    "google-genai"
 ]
 
 [tool.setuptools.packages.find]
@@ -68,5 +72,6 @@ strict = true
 minversion = "7.0"
 addopts = "-ra -q"
 testpaths = ["tests"]
+
 
 
