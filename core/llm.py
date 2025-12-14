@@ -1,4 +1,4 @@
-# agentforge/core/llm.py
+# alatix/core/llm.py
 from __future__ import annotations
 import os
 import json
@@ -1249,4 +1249,5 @@ def count_tokens(model: str, text: str) -> Optional[int]:
     except Exception:
         enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(text))
+
 
