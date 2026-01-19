@@ -3,7 +3,7 @@ import asyncio
 import json
 from typing import Any, Dict
 import pytest
-from agentforge.core.tools import Tool, ToolRegistry, tool
+from core.tools import Tool, ToolRegistry, tool
 
 
 # ---------------------------
