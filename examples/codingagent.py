@@ -455,9 +455,10 @@ async def main():
 # -----------------------------------------------
 # Multi-Agent setup can be added here if needed
 # -----------------------------------------------
+
 Codeagent = Agent(
     model="huggingface:Qwen/Qwen3-Coder-30B-A3B-Instruct:nebius",
-    api_key="hf_xxx",
+    api_key= API_KEY,
     max_tokens=4048,
     tools=[read_file,...],
     max_steps=5,
@@ -467,8 +468,8 @@ Codeagent = Agent(
 )
 
 Researchagent = Agent(
-    model="openai:gpt-3.5-turbo",
-    api_key="sk-xxx",
+    model="huggingface:Qwen/Qwen3-Next-80B-A3B-Instruct:together",
+    api_key=API_KEY,
     max_tokens=4048,
     tools=[write_file,...],
     max_steps=2,
