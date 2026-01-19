@@ -8,4 +8,5 @@
 "google-genai",
 "ollama",
 "openai",
-"faiss-cpu"
+"faiss-cpu",
+"pytest"
