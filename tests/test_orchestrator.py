@@ -4,9 +4,9 @@ import json
 import pytest
 from unittest.mock import AsyncMock
 
-from agentforge.core.orchestrator import SubAgentOrchestrator
-from agentforge.core.agent import Agent
-from agentforge.core.tools import Tool
+from core.orchestrator import SubAgentOrchestrator
+from core.agent import Agent
+from core.tools import Tool
 
 
 # ---------------------------
