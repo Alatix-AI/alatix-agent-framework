@@ -4,7 +4,7 @@ import json
 import pytest
 from unittest.mock import AsyncMock
 
-from agentforge.core.planner import (
+from core.planner import (
     AdvancedPlanner,
     PlanGraph,
     PlanNode,
