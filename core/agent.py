@@ -4,10 +4,10 @@ import json
 from typing import List, Dict, Any, Optional
 import asyncio
 
-from agentforge.core.llm import LLMAdapter
-from agentforge.core.tools import Tool, ToolRegistry
-from agentforge.core.memory import MemorySystem
-from agentforge.core.planner import AdvancedPlanner
+from .core.llm import LLMAdapter
+from .core.tools import Tool, ToolRegistry
+from .core.memory import MemorySystem
+from .core.planner import AdvancedPlanner
 
 
 class Agent:
