@@ -9,6 +9,8 @@ on:
 jobs:
   test-tools:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -26,6 +28,8 @@ jobs:
 
   test-memory:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -43,6 +47,8 @@ jobs:
 
   test-planner:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -60,6 +66,8 @@ jobs:
 
   test-agent:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -77,6 +85,8 @@ jobs:
 
   test-orchestrator:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -94,6 +104,8 @@ jobs:
 
   test-llm:
     runs-on: ubuntu-latest
+    env:
+     PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
