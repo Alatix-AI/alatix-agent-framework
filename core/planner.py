@@ -551,7 +551,10 @@ Based on the task and context, choose the best candidate by returning JSON: {{ "
             return "(no semantic hits)"
         lines = []
         for h in semantic_hits:
-            lines.append(f"- score:{h.get('score'):.4f} text: {str(h.get('text',''))[:max_chars].replace('\\n',' ')}")
+            text_part = str(h.get('text',''))[:max_chars]
+            
+            clean_text = text_part.replace('\n', ' ')
+            lines.append(f"- score:{h.get('score'):.4f} text: {clean_text}")
         return "\n".join(lines)
 
     def _format_episodic(self, episodic: List[Dict[str, Any]], max_chars: int = 500) -> str:
@@ -559,7 +562,10 @@ Based on the task and context, choose the best candidate by returning JSON: {{ "
             return "(no episodic)"
         lines = []
         for e in episodic:
-            lines.append(f"- action:{e.get('action')} result:{str(e.get('result'))[:max_chars].replace('\\n',' ')}")
+            result_part = str(e.get('result'))[:max_chars]
+            
+            clean_result = result_part.replace('\n', ' ') 
+            lines.append(f"- action:{e.get('action')} result:{clean_result}")
         return "\n".join(lines)
 
     def _format_tools_block(self, tools: Optional[Dict[str, Any]]) -> str:
@@ -682,5 +688,6 @@ def json_dumps_safe(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False)
     except Exception:
         return str(obj)
+
 
 
