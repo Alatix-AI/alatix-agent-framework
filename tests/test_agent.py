@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock
 from core.agent import Agent
 from core.tools import Tool
 from core.memory import MemorySystem
-from core.llm import MockAdapter
 
 
 # ---------------------------
