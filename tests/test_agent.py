@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 from core.agent import Agent
 from core.tools import Tool
 from core.memory import MemorySystem
+from core.llm import MockAdapter
 
 
 # ---------------------------
@@ -73,7 +74,7 @@ def mock_tool_obj():
 
 
 @pytest.fixture
-def agent(mock_llm, mock_tool_obj):
+def agent(mock_tool_obj):
     # Create agent with mock LLM and tool
     agent = Agent(
         model="mock:test",
@@ -83,7 +84,7 @@ def agent(mock_llm, mock_tool_obj):
         persistent=False
     )
     # Inject mock LLM
-    agent.llm.client.adapter.llm = mock_llm
+    agent.llm.client.adapter.llm = MockAdapter()
     return agent
 
 
