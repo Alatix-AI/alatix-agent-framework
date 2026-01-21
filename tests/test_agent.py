@@ -83,7 +83,7 @@ def agent(mock_tool_obj):
         persistent=False
     )
     # Inject mock LLM
-    agent.llm = MockLLM
+    agent.llm = MockLLM()
     return agent
 
 
