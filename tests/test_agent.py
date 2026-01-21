@@ -84,7 +84,7 @@ def agent(mock_tool_obj):
         persistent=False
     )
     # Inject mock LLM
-    agent.llm.client.adapter.llm = MockAdapter()
+    agent.llm = MockLLM
     return agent
 
 
