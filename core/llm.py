@@ -1038,6 +1038,11 @@ class GeminiAdapter(BaseLLM):
 class MockAdapter(BaseLLM):
     provider = "mock"
 
+    def __init__(self, model: str = "mock:test", **kwargs):
+        # Accept any args for compatibility with other adapters
+        self.model = model
+        super().__init__()
+
     async def generate(self, prompt: str, **kwargs) -> LLMResponse:
         return LLMResponse(text=f"[MOCK] {prompt}", raw={"mock": True})
 
@@ -1074,7 +1079,6 @@ class MockAdapter(BaseLLM):
                 }
             ]
         }
-
 
 # --------------------------------------------------------
 # LLMAdapter (simple wrapper for LLMClient)
@@ -1249,5 +1253,6 @@ def count_tokens(model: str, text: str) -> Optional[int]:
     except Exception:
         enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(text))
+
 
 
